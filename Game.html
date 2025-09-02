@@ -4,14 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#ff8fb2" />
-  <title>MafiaCats – Game (Data-driven v0.91 – met inline uitleg)</title>
+  <title>MafiaCats – Game (Data‑driven v0.91 – met inline uitleg)</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     /*
-      UI-kleuren en basisstijl
+      UI‑kleuren en basisstijl
       ------------------------------------------------------------
-      - We houden alles licht en roze-tinten voor de "schattige mafia" vibe.
+      - We houden alles licht en roze‑tinten voor de "schattige mafia" vibe.
       - Panelen hebben subtiele borders en schaduwen.
     */
     :root{ --accent:#ff8fb2; --accent-600:#ff6f9c; --lav:#cdb4f5; }
@@ -26,13 +26,21 @@
     .tag{ font-size:.72rem; padding:.25rem .55rem; border-radius:.7rem; background:#ffe3ef; border:1px solid #ffcfe2; color:#7d2a4b; }
     .mono{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
     .pill{ font-size:.72rem; padding:.1rem .5rem; border-radius:.7rem; background:#ffe7f0; border:1px solid #ffd4e6; color:#7d2a4b; }
-  </style>
+    /* Politiekat-stempel animatie */
+  @keyframes stamp {
+    0%   { transform: scale(5); opacity: 0; }
+    30%  { transform: scale(1.2); opacity: 1; }
+    50%  { transform: scale(1);   opacity: 1; }
+    100% { transform: scale(0.5); opacity: 0; }
+  }
+  .stamp-anim { animation: stamp .8s ease-out forwards; }
+</style>
 </head>
 <body class="min-h-screen flex flex-col">
   <!--
     HEADER
     ------------------------------------------------------------
-    - Toont snel HUD-statistieken (cash/hp/energie/alert/rep) en acties: opslaan & resetten.
+    - Toont snel HUD‑statistieken (cash/hp/energie/alert/rep) en acties: opslaan & resetten.
     - gearHUD laat actieve uitrusting zien, ook op mobiel.
   -->
   <header class="px-4 py-2 bg-white/85 backdrop-blur border-b border-pink-200 flex items-center justify-between">
@@ -96,7 +104,7 @@
       <section class="panel p-4">
         <h2 class="font-semibold mb-2">Misdaden</h2>
         <div class="grid grid-cols-1 gap-2">
-          <!-- Overvallen zijn de "grote" misdaden met zwaardere risico's en gear-impact -->
+          <!-- Overvallen zijn de "grote" misdaden met zwaardere risico's en gear‑impact -->
           <button id="openHeists" class="btn w-full px-4 py-3 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-600)] text-white">Overvallen</button>
           <!-- Kleinere misdaden (crime) delen dezelfde engine maar vaak lagere kosten/beloningen -->
           <button id="openCrimes" class="btn w-full px-4 py-3 rounded-xl bg-black/5 hover:bg-black/10">Misdaden</button>
@@ -166,7 +174,7 @@
       <div id="infoView" class="hidden">
         <h3 class="font-semibold mb-2">Info & speluitleg</h3>
         <div class="panel p-3 text-sm space-y-3">
-          <p>Deze build gebruikt <b>data-driven acties</b>. Nieuwe content toevoegen = regels in het <code>ACTIONS</code>-object.</p>
+          <p>Deze build gebruikt <b>data‑driven acties</b>. Nieuwe content toevoegen = regels in het <code>ACTIONS</code>-object.</p>
           <div class="panel p-3">
             <h4 class="font-semibold mb-1">README – zo voeg je acties toe</h4>
             <ol class="list-decimal ml-5 space-y-1 text-black/80">
@@ -181,7 +189,7 @@
       </div>
     </section>
 
-    <!-- RECHTS: Tips (optioneel gameplay-advies) -->
+    <!-- RECHTS: Tips (optioneel gameplay‑advies) -->
     <aside class="flex flex-col gap-3 md:gap-4 overflow-hidden">
       <section class="panel p-4">
         <h3 class="font-semibold mb-1">Tips</h3>
@@ -207,7 +215,7 @@
     // Versie van de save. Als je breaking changes doet, pas de key aan.
     const SAVE_KEY='mafiacats_data_v091';
 
-    // Simpele "klik-slot" om dubbele acties/spam te voorkomen.
+    // Simpele "klik‑slot" om dubbele acties/spam te voorkomen.
     let actionLock=false; function withLock(fn){ if(actionLock) return; actionLock=true; try{ fn(); } finally{ setTimeout(()=>actionLock=false, 600); } }
 
     // Globale speltoestand. Als er geen save is, starten we met defaults.
@@ -224,7 +232,7 @@
       ------------------------------------------------------------
       - GEAR_CATALOG beschrijft elk item (bonus, uses, prijs).
       - ACTIONS groepeert alle acties per categorie. Je UI rendert direct
-        vanuit deze data (data-driven), geen aparte hardcoded renders nodig.
+        vanuit deze data (data‑driven), geen aparte hardcoded renders nodig.
     */
     const GEAR_CATALOG = {
       pistol:   { key:'pistol',   label:'🔫 Pistool (+10%, 3 uses)', bonus:0.10, uses:3, price:16 }, // prijs 18 → 16 (balans)
@@ -268,7 +276,7 @@
     /* ------------------------------------------------------------
        SAVE / LOAD / RESET
        - Slaat volledige state op in localStorage.
-       - reset(): zet state terug naar defaults (en forceert UI-refresh).
+       - reset(): zet state terug naar defaults (en forceert UI‑refresh).
     ------------------------------------------------------------ */
     function save(){ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); toast('💾 Opgeslagen'); }
     function load(){ try{ const raw=localStorage.getItem(SAVE_KEY); return raw?JSON.parse(raw):null }catch{return null} }
@@ -293,6 +301,16 @@
       state.asielUntil = Math.max(state.asielUntil || 0, now() + addMs); // stapelt indien al vastzit
       showView('asiel');
       renderAsiel();
+      // Politiekat stempel-animatie trigger
+      const overlay = document.getElementById('stampOverlay');
+      const img = document.getElementById('stampImage');
+      if (overlay && img) {
+        overlay.classList.remove('hidden');
+        img.classList.remove('stamp-anim'); // reset
+        void img.offsetWidth;               // reflow for restart
+        img.classList.add('stamp-anim');
+        setTimeout(()=> overlay.classList.add('hidden'), 900);
+      }
       showResult(`⛓️ ${reason}: Kattenasiel voor ${minutes} min.`, 'err');
       log(`⛓️ ${reason}: Kattenasiel (${minutes} min).`);
     }
@@ -318,8 +336,8 @@
     }
 
     /* ------------------------------------------------------------
-       VIEW SWITCHER & RESULTAAT-BANNER
-       - showView(): verbergt alle center-views en toont er één.
+       VIEW SWITCHER & RESULTAAT‑BANNER
+       - showView(): verbergt alle center‑views en toont er één.
        - showResult(): compact bericht dat na 2.5s automatisch sluit.
     ------------------------------------------------------------ */
     function showView(kind){
@@ -348,7 +366,7 @@
 
     /* ------------------------------------------------------------
        HUD & ECONOMIE HELPERFUNCTIES
-       - updateHUD(): synchroniseert alle HUD-elementen met state.
+       - updateHUD(): synchroniseert alle HUD‑elementen met state.
        - spend(): energiecheck + subtract; blokkeert acties in asiel.
        - addCash/HP/Rep/Heat: centrale mutators met safety.
     ------------------------------------------------------------ */
@@ -373,7 +391,7 @@
        - totalGearBonus(): som van bonussen van alle equipped items.
        - consumeGearUse(): slijt 1 use op alle equipped items na misdaad/overval.
          * Tricky deel: we verwijderen versleten items uit de bag en moeten
-           vervolgens de indices in "equipped" her-mappen naar het nieuwe bag-array.
+           vervolgens de indices in "equipped" her‑mappen naar het nieuwe bag‑array.
        - renderActiveGearBadges(): toont kleine labels met uses over in HUD.
     ------------------------------------------------------------ */
     function totalGearBonus(){ let sum=0; state.gear.equipped.forEach(idx=>{ const inst=state.gear.bag[idx]; if(inst){ const meta=GEAR_CATALOG[inst.k]; if(meta) sum+=meta.bonus; } }); return sum; }
@@ -401,7 +419,7 @@
        XP & KANSEN (balanspatch)
        - xpBoost(): afnemende meeropbrengst via sqrt; max +30%.
        - actionChance(): basis + xpBoost + (optioneel) gear; capped op 95%.
-       - arrestChanceOnFail(): basisarrest + milde extra kans bij lage succes-kans.
+       - arrestChanceOnFail(): basisarrest + milde extra kans bij lage succes‑kans.
     ------------------------------------------------------------ */
     function xpOf(key){ return state.xp[key]||0; }
     function addXP(key, amt){ state.xp[key]=(state.xp[key]||0)+amt; }
@@ -416,10 +434,10 @@
     function arrestChanceOnFail(act, successChance){ if(!act.arrest) return 0; const extra=(1-successChance)*0.35; return Math.min(1, (act.arrest||0) + extra); }
 
     /* ------------------------------------------------------------
-       ACTIE-ENGINE (één pad voor heist/crime/werk)
+       ACTIE‑ENGINE (één pad voor heist/crime/werk)
        - doAction(): voert de kansberekening uit en verwerkt succes/falen.
        - Bij succes: geld, rep, alert succeswaarde, +3 XP.
-       - Bij falen: HP-schade, alert faalwaarde, +1 XP, optioneel asiel.
+       - Bij falen: HP‑schade, alert faalwaarde, +1 XP, optioneel asiel.
        - Na misdaad/overval: gear slijt 1 use op alle equipped items.
     ------------------------------------------------------------ */
     function doAction(act){
@@ -448,7 +466,7 @@
     /* ------------------------------------------------------------
        RENDERERS
        - renderList(kind): één generieke lijst voor overvallen/misdaden/werk.
-         * Toont kans, gearbonus, arrestkans, XP-balk en actieknop.
+         * Toont kans, gearbonus, arrestkans, XP‑balk en actieknop.
        - Shop/Inv hebben eigen renderfuncties.
     ------------------------------------------------------------ */
     function renderList(kind){
@@ -463,7 +481,7 @@
         const ch = act.type==='work' ? null : actionChance(act);
         const aCh = act.type==='work' ? null : arrestChanceOnFail(act, ch);
         const gear = act.allowGear ? Math.round(totalGearBonus()*100) : 0;
-        const xpPct = Math.min(100, Math.floor((xp/25)*100)); // simpele UI-schaal voor XP-balk
+        const xpPct = Math.min(100, Math.floor((xp/25)*100)); // simpele UI‑schaal voor XP‑balk
         const li=document.createElement('li'); li.className='flex items-center gap-3 bg-white rounded-xl px-3 py-2 border border-pink-100';
         li.innerHTML = `
           <div class="text-xl">${act.emoji||'🐾'}</div>
@@ -486,7 +504,7 @@
         ul.appendChild(li);
       });
 
-      // Eén event-pad dat de juiste actie uit alle categorieën zoekt en uitvoert
+      // Eén event‑pad dat de juiste actie uit alle categorieën zoekt en uitvoert
       $$('[data-act]', ul).forEach(b=> b.addEventListener('click', ()=> withLock(()=> {
         const key=b.getAttribute('data-act');
         const act = [...ACTIONS.overvallen, ...ACTIONS.misdaden, ...ACTIONS.werk].find(a=>a.key===key);
@@ -530,7 +548,7 @@
       updateHUD(); renderShop(); if(!$('#invView').classList.contains('hidden')) renderInv();
     }
 
-    // INVENTARIS: equip/unequip-knoppen renderen per iteminstantie
+    // INVENTARIS: equip/unequip‑knoppen renderen per iteminstantie
     function renderInv(){
       const ul=$('#invListCenter'); ul.innerHTML='';
       state.gear.bag.forEach((inst,idx)=>{
@@ -577,7 +595,7 @@
 
     /* ------------------------------------------------------------
        EVENT BINDINGS
-       - Alle UI-knoppen koppelen aan render/engine functies.
+       - Alle UI‑knoppen koppelen aan render/engine functies.
     ------------------------------------------------------------ */
     $('#openHeists').addEventListener('click', ()=> renderList('overvallen'));
     $('#openCrimes').addEventListener('click', ()=> renderList('misdaden'));
@@ -597,10 +615,14 @@
     // Init: eerste render + welkomsregel (alleen op koude start)
     function initialRender(){
       update(); showView('log');
-      if(!load()) log('Welkom! Data-driven acties + balanspatch actief. 🐾');
+      if(!load()) log('Welkom! Data‑driven acties + balanspatch actief. 🐾');
       if(isInAsiel()) tickAsiel();
     }
     initialRender();
   </script>
+  <!-- Politiekat stempel overlay -->
+  <div id="stampOverlay" class="fixed inset-0 flex items-center justify-center pointer-events-none hidden z-50">
+    <img id="stampImage" src="assets/policecat.png" alt="Politiekat" class="w-1/2 max-w-xs">
+  </div>
 </body>
 </html>
