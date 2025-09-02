@@ -26,14 +26,17 @@
     .tag{ font-size:.72rem; padding:.25rem .55rem; border-radius:.7rem; background:#ffe3ef; border:1px solid #ffcfe2; color:#7d2a4b; }
     .mono{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
     .pill{ font-size:.72rem; padding:.1rem .5rem; border-radius:.7rem; background:#ffe7f0; border:1px solid #ffd4e6; color:#7d2a4b; }
-    /* Politiekat-stempel animatie */
-  @keyframes stamp {
-    0%   { transform: scale(5); opacity: 0; }
-    30%  { transform: scale(1.2); opacity: 1; }
-    50%  { transform: scale(1);   opacity: 1; }
-    100% { transform: scale(0.5); opacity: 0; }
-  }
-  .stamp-anim { animation: stamp .8s ease-out forwards; }
+/* Politiekat-stempel: groter + trager */
+@keyframes stamp {
+  0%   { transform: scale(2.4); opacity: 0; }   /* start héél groot en fade in */
+  22%  { transform: scale(1.15); opacity: 1; }  /* overshoot */
+  38%  { transform: scale(1.00); opacity: 1; }  /* landt op 1x */
+  80%  { transform: scale(0.45); opacity: .85;} /* krimpt duidelijk */
+  100% { transform: scale(0.45); opacity: 0; }  /* fade out */
+}
+.stamp-anim {
+  animation: stamp 1.4s ease-out forwards;      /* was 0.8s → nu 1.4s */
+}
 </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -620,9 +623,12 @@
     }
     initialRender();
   </script>
-  <!-- Politiekat stempel overlay -->
-  <div id="stampOverlay" class="fixed inset-0 flex items-center justify-center pointer-events-none hidden z-50">
-    <img id="stampImage" src="assets/policecat.png" alt="Politiekat" class="w-1/2 max-w-xs">
+<!-- Politiekat stempel overlay -->
+<div id="stampOverlay" class="fixed inset-0 flex items-center justify-center pointer-events-none hidden z-50">
+  <!-- was: class="w-1/2 max-w-xs" -->
+  <img id="stampImage" src="assets/politiekat.png" alt="Politiekat"
+       class="w-[70vw] max-w-[720px]">
+</div>
   </div>
 </body>
 </html>
