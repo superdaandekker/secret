@@ -8,6 +8,12 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    /*
+      UI‑kleuren en basisstijl
+      ------------------------------------------------------------
+      - We houden alles licht en roze‑tinten voor de "schattige mafia" vibe.
+      - Panelen hebben subtiele borders en schaduwen.
+    */
     :root{ --accent:#ff8fb2; --accent-600:#ff6f9c; --lav:#cdb4f5; }
     body{ background:#fff6f8; font-family:'Outfit',sans-serif; color:#2e2a2c; }
     .panel{ background:#fff; border:1px solid #f4d4e0; border-radius:1rem; box-shadow:0 4px 16px rgba(0,0,0,.05); }
@@ -20,28 +26,238 @@
     .tag{ font-size:.72rem; padding:.25rem .55rem; border-radius:.7rem; background:#ffe3ef; border:1px solid #ffcfe2; color:#7d2a4b; }
     .mono{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
     .pill{ font-size:.72rem; padding:.1rem .5rem; border-radius:.7rem; background:#ffe7f0; border:1px solid #ffd4e6; color:#7d2a4b; }
-    /* Politiekat-stempel: van groot naar klein, gecentreerd, stempel-effect */
-    @keyframes stamp {
-      0%   { transform: scale(6); opacity: 0; filter: drop-shadow(0 0 50px #ff8fb2);}
-      22%  { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 20px #ff8fb2);}
-      38%  { transform: scale(1.00); opacity: 1; filter: none;}
-      80%  { transform: scale(0.8); opacity: .9; filter: none;}
-      100% { transform: scale(0.8); opacity: 0; filter: none;}
-    }
-    .stamp-anim {
-      animation: stamp 2.54s cubic-bezier(.42,1.32,.58,.98) forwards;
-    }
-  </style>
+/* Politiekat-stempel: groter + trager */
+@keyframes stamp {
+  0%   { transform: scale(6); opacity: 0; }   /* start héél groot en fade in */
+  22%  { transform: scale(1.15); opacity: 1; }  /* overshoot */
+  38%  { transform: scale(1.00); opacity: 1; }  /* landt op 1x */
+  80%  { transform: scale(0.8); opacity: .9;} /* krimpt duidelijk */
+  100% { transform: scale(0.8); opacity: 0; }  /* fade out */
+}
+.stamp-anim {
+  animation: stamp 2.54s ease-out forwards;      /* was 0.8s → nu 1.5s */
+}
+</style>
 </head>
 <body class="min-h-screen flex flex-col">
-  <!-- rest van je HTML is ongewijzigd -->
+  <!--
+    HEADER
+    ------------------------------------------------------------
+    - Toont snel HUD‑statistieken (cash/hp/energie/alert/rep) en acties: opslaan & resetten.
+    - gearHUD laat actieve uitrusting zien, ook op mobiel.
+  -->
+  <header class="px-4 py-2 bg-white/85 backdrop-blur border-b border-pink-200 flex items-center justify-between">
+    <a href="#" class="flex items-center gap-2 font-extrabold text-lg">🐾 Mafia<span class="text-pink-500">Cats</span></a>
+    <div class="flex items-center gap-3 text-sm">
+      <span class="hidden md:flex items-center gap-3">
+        <span title="Blikvoer">🥫 <b id="hudCash">10</b></span>
+        <span title="Levens">💖 <b id="hudHP">9</b></span>
+        <span title="Energie">💤 <b id="hudEN">100%</b></span>
+        <span title="Honden-alert">🐶 <b id="hudHeat">0%</b></span>
+        <span title="Purr-points">✨ <b id="hudRep">0</b></span>
+      </span>
+      <div id="gearHUD" class="flex items-center gap-1 text-xs"></div>
+      <button id="saveBtn" class="btn px-3 py-1.5 rounded-lg bg-black/5 hover:bg-black/10">Opslaan</button>
+      <button id="resetBtn" class="btn px-3 py-1.5 rounded-lg bg-pink-200 hover:bg-pink-300">Reset</button>
+    </div>
+  </header>
+
+  <!--
+    LAYOUT
+    ------------------------------------------------------------
+    Drie kolommen:
+      - Links: profiel + categorieknoppen (altijd zichtbaar zonder veel scroll)
+      - Midden: "centerPanel" wisselt tussen schermen (log, lists, shop, inv, asiel, info)
+      - Rechts: tips (optioneel)
+    Het main heeft vaste hoogte (100vh - header) en gebruikt overflow-auto op het middenpaneel.
+  -->
+  <main class="flex-1 max-w-7xl mx-auto w-full p-3 md:p-4 grid lg:grid-cols-[320px_1fr_320px] gap-3 md:gap-4 overflow-hidden" style="height:calc(100vh - 56px)">
+    <!-- LEFT: Profiel & categorieën -->
+    <aside class="flex flex-col gap-3 md:gap-4 overflow-hidden">
+      <!-- PROFIEL: toont kernstats, dagknoppen en toegang tot inventaris -->
+      <section class="panel p-4 sticky top-3">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-full bg-pink-200 flex items-center justify-center text-2xl">🐱</div>
+          <div class="grow">
+            <input id="charName" class="w-full bg-pink-50/50 border border-pink-200 rounded-lg px-2 py-1 text-sm" placeholder="Jouw kattennaam"/>
+            <p class="text-xs text-black/60 mt-1">Rang: <span id="rank">Kittenspion</span> · Dag <span id="day">1</span></p>
+          </div>
+        </div>
+        <div class="mt-3 space-y-2 text-xs">
+          <div>💤 Energie <span class="float-right" id="en">100%</span></div>
+          <div class="bar"><i id="enBar" style="width:100%"></i></div>
+          <div>🐶 Alert <span class="float-right" id="heat">0%</span></div>
+          <div class="bar"><i id="heatBar" style="width:0%"></i></div>
+          <div class="grid grid-cols-3 gap-2 text-center mt-2">
+            <div class="panel p-2"><div class="text-lg" id="cash">10</div><div class="text-[10px] text-black/60">🥫 Blikvoer</div></div>
+            <div class="panel p-2"><div class="text-lg" id="hp">9</div><div class="text-[10px] text-black/60">💖 Levens</div></div>
+            <div class="panel p-2"><div class="text-lg" id="rep">0</div><div class="text-[10px] text-black/60">✨ Purr</div></div>
+          </div>
+          <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
+            <button id="nextDay" class="btn px-3 py-2 rounded-lg bg-pink-500 text-white">Volgende dag</button>
+            <button id="restBtn" class="btn px-3 py-2 rounded-lg bg-black/5 hover:bg-black/10">Rust</button>
+          </div>
+          <div class="mt-3">
+            <button id="openInv" class="btn w-full px-4 py-3 rounded-xl bg-black/5 hover:bg-black/10">Inventaris</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- CATEGORIE: Misdaden -->
+      <section class="panel p-4">
+        <h2 class="font-semibold mb-2">Misdaden</h2>
+        <div class="grid grid-cols-1 gap-2">
+          <!-- Overvallen zijn de "grote" misdaden met zwaardere risico's en gear‑impact -->
+          <button id="openHeists" class="btn w-full px-4 py-3 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-600)] text-white">Overvallen</button>
+          <!-- Kleinere misdaden (crime) delen dezelfde engine maar vaak lagere kosten/beloningen -->
+          <button id="openCrimes" class="btn w-full px-4 py-3 rounded-xl bg-black/5 hover:bg-black/10">Misdaden</button>
+        </div>
+      </section>
+
+      <!-- CATEGORIE: Algemeen (geen misdaad) -->
+      <section class="panel p-4">
+        <h2 class="font-semibold mb-2">Algemeen</h2>
+        <div class="grid grid-cols-1 gap-2">
+          <button id="openWork" class="btn w-full px-4 py-3 rounded-xl bg-black/5 hover:bg-black/10">Werk</button>
+          <button id="openShop" class="btn w-full px-4 py-3 rounded-xl bg-black/5 hover:bg-black/10">Kattenshop</button>
+          <button id="openAsiel" class="btn w-full px-4 py-3 rounded-xl bg-black/5 hover:bg-black/10">Kattenasiel</button>
+          <button id="openInfo" class="btn w-full px-4 py-3 rounded-xl bg-black/5 hover:bg-black/10">Info</button>
+        </div>
+      </section>
+    </aside>
+
+    <!-- MIDDEN: views die in het centerPanel wisselen -->
+    <section id="centerPanel" class="panel p-3 md:p-4 overflow-auto">
+      <div class="flex items-center justify-between mb-2">
+        <h2 id="centerTitle" class="text-lg font-extrabold">Stad & Logboek</h2>
+        <div class="text-xs"><span id="centerTag" class="tag">v0.91</span></div>
+      </div>
+
+      <!-- Inline feedback/resultaatmelding (verdwijnt automatisch) -->
+      <div id="centerResult" class="hidden mb-3 p-3 rounded-xl border text-sm"></div>
+
+      <!-- LOG: standaard startscherm, prepend toont nieuwste bovenaan -->
+      <div id="logView"><div id="log" class="space-y-1 text-sm"></div></div>
+
+      <!-- GENERIC LIST VIEW: gebruikt door heists/crimes/werk om 1 renderer te delen -->
+      <div id="listView" class="hidden">
+        <p id="listIntro" class="text-sm text-black/70 mb-3"></p>
+        <ul id="listUL" class="space-y-2 text-sm"></ul>
+        <div class="mt-4">
+          <button data-nav="log" class="btn px-4 py-2 rounded-lg bg-black/5 hover:bg-black/10">← Terug naar Logboek</button>
+        </div>
+      </div>
+
+      <!-- SHOP: items kopen (gear), zie GEAR_CATALOG -->
+      <div id="shopView" class="hidden">
+        <p class="text-sm text-black/70 mb-3">Koop <b>uitrusting</b> met <b>uses</b>. Je kunt <b>max 2</b> items tegelijk uitrusten. Na elke overval/misdaad slijt 1 use.</p>
+        <ul id="shopListCenter" class="text-sm space-y-2"></ul>
+        <div class="mt-4"><button data-nav="log" class="btn px-4 py-2 rounded-lg bg-black/5 hover:bg-black/10">← Terug</button></div>
+      </div>
+
+      <!-- INVENTARIS: items equippen/unequippen -->
+      <div id="invView" class="hidden">
+        <p class="text-sm text-black/70 mb-3">Uitrusten en beheren. <b>Max 2</b> items tegelijk actief.</p>
+        <div class="mb-2">Actief: <span id="activeGearBadges" class="inline-flex flex-wrap gap-1 align-middle"></span></div>
+        <ul id="invListCenter" class="text-sm space-y-2"></ul>
+        <div class="mt-4"><button data-nav="log" class="btn px-4 py-2 rounded-lg bg-black/5 hover:bg-black/10">← Terug</button></div>
+      </div>
+
+      <!-- ASIEL (tijdstraf) -->
+      <div id="asielView" class="hidden">
+        <div id="asielCard" class="p-4 border border-pink-200 rounded-xl bg-pink-50">
+          <h3 class="font-semibold mb-1">Kattenasiel 🐾</h3>
+          <p id="asielStatus" class="text-sm text-black/70 mb-2"></p>
+          <div class="mono text-sm"><span id="asielCountdown">--:--:--</span></div>
+        </div>
+        <div class="mt-4"><button data-nav="log" class="btn px-4 py-2 rounded-lg bg-black/5 hover:bg-black/10">← Terug</button></div>
+      </div>
+
+      <!-- INFO + README: hoe nieuwe acties toe te voegen -->
+      <div id="infoView" class="hidden">
+        <h3 class="font-semibold mb-2">Info & speluitleg</h3>
+        <div class="panel p-3 text-sm space-y-3">
+          <p>Deze build gebruikt <b>data‑driven acties</b>. Nieuwe content toevoegen = regels in het <code>ACTIONS</code>-object.</p>
+          <div class="panel p-3">
+            <h4 class="font-semibold mb-1">README – zo voeg je acties toe</h4>
+            <ol class="list-decimal ml-5 space-y-1 text-black/80">
+              <li>Zoek <code>const ACTIONS = {...}</code>.</li>
+              <li>Voeg een object toe aan <code>overvallen</code>, <code>misdaden</code> of <code>werk</code>.</li>
+              <li>Velden: <code>key,type,name,emoji,base,cost,payout,rep,heatS,heatF,hpF,arrest,minutes,allowGear</code>.</li>
+              <li>Sla op → refresh → klaar.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="mt-3"><button data-nav="log" class="btn px-4 py-2 rounded-lg bg-black/5 hover:bg-black/10">← Terug</button></div>
+      </div>
+    </section>
+
+    <!-- RECHTS: Tips (optioneel gameplay‑advies) -->
+    <aside class="flex flex-col gap-3 md:gap-4 overflow-hidden">
+      <section class="panel p-4">
+        <h3 class="font-semibold mb-1">Tips</h3>
+        <ul class="text-sm space-y-1 text-black/70">
+          <li>📥 Nieuwe acties? Voeg regels toe aan <span class="pill">ACTIONS</span>.</li>
+          <li>🧰 Uitrusting stapelt optelsgewijs (max 2 actief).</li>
+          <li>🚨 100% Alert = 15 min Kattenasiel.</li>
+        </ul>
+      </section>
+    </aside>
+  </main>
+
   <script>
-    // je script is ongewijzigd
-  </script>
-  <!-- Politiekat stempel overlay -->
-  <div id="stampOverlay" class="fixed inset-0 flex items-center justify-center pointer-events-none hidden z-50">
-    <img id="stampImage" src="assets/politiekat.png" alt="Politiekat"
-         class="w-[95vw] max-w-[1200px]">
-  </div>
-</body>
-</html>
+    /* ============================================================
+       HULPFUNCTIES & STATE
+       - We gebruiken een simpele PRNG (lineaire congruentie) voor deterministische RNG per sessie.
+       - Alles wordt opgeslagen in localStorage (SAVE_KEY) zodat je voortgang bewaart tussen sessies.
+    ============================================================ */
+
+    // Korte query helpers
+    const $=(s,r=document)=>r.querySelector(s); const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+
+    // Versie van de save. Als je breaking changes doet, pas de key aan.
+    const SAVE_KEY='mafiacats_data_v091';
+
+    // Simpele "klik‑slot" om dubbele acties/spam te voorkomen.
+    let actionLock=false; function withLock(fn){ if(actionLock) return; actionLock=true; try{ fn(); } finally{ setTimeout(()=>actionLock=false, 600); } }
+
+    // Globale speltoestand. Als er geen save is, starten we met defaults.
+    const state = load() || {
+      name:'',cash:10,hp:9,en:100,rep:0,heat:0,day:1,
+      xp:{},                 // XP per actiekey (bijv. xp['visboer'] = 12)
+      gear:{ bag:[], equipped:[] }, // bag = items, equipped = indices naar bag
+      seed:Math.floor(Math.random()*1e9), // startseed voor RNG
+      asielUntil:0          // timestamp (ms) wanneer asiel eindigt; 0 = vrij
+    };
+
+    /*
+      Catalogi: gear & acties
+      ------------------------------------------------------------
+      - GEAR_CATALOG beschrijft elk item (bonus, uses, prijs).
+      - ACTIONS groepeert alle acties per categorie. Je UI rendert direct
+        vanuit deze data (data‑driven), geen aparte hardcoded renders nodig.
+    */
+    const GEAR_CATALOG = {
+      pistol:   { key:'pistol',   label:'🔫 Pistool (+10%, 3 uses)', bonus:0.10, uses:3, price:16 }, // prijs 18 → 16 (balans)
+      lockpick: { key:'lockpick', label:'🗝️ Lockpick-set (+6%, 5 uses)', bonus:0.06, uses:5, price:12 },
+      shovel:   { key:'shovel',   label:'⛏️ Schep (+4%, 8 uses)', bonus:0.04, uses:8, price:14 },  // prijs 10 → 14 (balans)
+    };
+
+    const ACTIONS = {
+      overvallen: [
+        {key:'visboer',      type:'heist', name:'Jat vis bij de visboer', emoji:'🐟', base:0.38, cost:10, payout:[4,9],  rep:2, heatS:6,  heatF:8,  hpF:1, arrest:0.18, minutes:1,  allowGear:true},
+        {key:'keukenkast',   type:'heist', name:'Inbreken in keukenkast', emoji:'🍽️', base:0.30, cost:12, payout:[6,13], rep:3, heatS:8,  heatF:10, hpF:1, arrest:0.26, minutes:2,  allowGear:true},
+        {key:'magazijn',     type:'heist', name:'Supermarkt-magazijn',    emoji:'📦', base:0.22, cost:16, payout:[10,18],rep:4, heatS:10, heatF:12, hpF:1, arrest:0.34, minutes:5,  allowGear:true},
+        {key:'melkfabriek',  type:'heist', name:'Overval op melkfabriek', emoji:'🥛', base:0.18, cost:20, payout:[14,26],rep:5, heatS:12, heatF:16, hpF:1, arrest:0.42, minutes:7,  allowGear:true},
+        {key:'dierenwinkel', type:'heist', name:'Dierenwinkel-raid',      emoji:'🐾', base:0.14, cost:22, payout:[20,34],rep:7, heatS:14, heatF:20, hpF:2, arrest:0.55, minutes:10, allowGear:true}
+      ],
+      misdaden: [
+        {key:'zakkenrollen', type:'crime', name:'Zakkenrollen op de markt', emoji:'👜', base:0.25, cost:8,  payout:[2,6],  rep:1, heatS:4, heatF:7,  hpF:1, arrest:0.22, minutes:2, allowGear:true},
+        {key:'autokraak',    type:'crime', name:'Autokraak bij parkeerplaats', emoji:'🚗', base:0.20, cost:14, payout:[8,16], rep:3, heatS:8, heatF:12, hpF:1, arrest:0.38, minutes:5, allowGear:true},
+        {key:'graffiti',     type:'crime', name:'Graffiti op het hondenhok', emoji:'🎨', base:0.30, cost:6,  payout:[1,4],  rep:1, heatS:3, heatF:6,  hpF:0, arrest:0.18, minutes:1, allowGear:false}
+      ],
+      werk: [
+        {key:'knuffel',   type:'work', name:'Poseren als knuffel',          emoji:'🧸', cost:8,  payout:[3,7],  rep:1},
+        {key:'ratten',    type:'work', name:'Ratten vangen in de haven',    emoji:'🐭', cost:10, payout:[5,10], rep:2},
+        {key:'chauffeur', type:'work', name:'Dozen-mobiel chauffeur',       emoji:'🚚', cost:12, payout:[7,12], rep:2}
+      ],
