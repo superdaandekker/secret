@@ -28,14 +28,14 @@
     .pill{ font-size:.72rem; padding:.1rem .5rem; border-radius:.7rem; background:#ffe7f0; border:1px solid #ffd4e6; color:#7d2a4b; }
 /* Politiekat-stempel: groter + trager */
 @keyframes stamp {
-  0%   { transform: scale(2.4); opacity: 0; }   /* start héél groot en fade in */
+  0%   { transform: scale(6); opacity: 0; }   /* start héél groot en fade in */
   22%  { transform: scale(1.15); opacity: 1; }  /* overshoot */
   38%  { transform: scale(1.00); opacity: 1; }  /* landt op 1x */
-  80%  { transform: scale(0.45); opacity: .85;} /* krimpt duidelijk */
-  100% { transform: scale(0.45); opacity: 0; }  /* fade out */
+  80%  { transform: scale(0.8); opacity: .9;} /* krimpt duidelijk */
+  100% { transform: scale(0.8); opacity: 0; }  /* fade out */
 }
 .stamp-anim {
-  animation: stamp 1.4s ease-out forwards;      /* was 0.8s → nu 1.4s */
+  animation: stamp 2.54s ease-out forwards;      /* was 0.8s → nu 1.5s */
 }
 </style>
 </head>
@@ -312,7 +312,7 @@
         img.classList.remove('stamp-anim'); // reset
         void img.offsetWidth;               // reflow for restart
         img.classList.add('stamp-anim');
-        setTimeout(()=> overlay.classList.add('hidden'), 900);
+        setTimeout(()=> overlay.classList.add('hidden'), 3000);
       }
       showResult(`⛓️ ${reason}: Kattenasiel voor ${minutes} min.`, 'err');
       log(`⛓️ ${reason}: Kattenasiel (${minutes} min).`);
@@ -627,7 +627,7 @@
 <div id="stampOverlay" class="fixed inset-0 flex items-center justify-center pointer-events-none hidden z-50">
   <!-- was: class="w-1/2 max-w-xs" -->
   <img id="stampImage" src="assets/politiekat.png" alt="Politiekat"
-       class="w-[70vw] max-w-[720px]">
+       class="w-[95vw] max-w-[1200px]">
 </div>
   </div>
 </body>
